@@ -1,0 +1,98 @@
+#!/usr/bin/env sh
+
+
+# Ensure that the Singularity container rplot.img is available in the current working directory or specify the correct path to the container in the script.
+
+# Run the script using the following command:
+
+
+#     ./make_plot input_file output_file
+
+# e.g 
+#     ./make_plot screen_output.csv output_file.html
+
+
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <infile> <outfile>"
+  exit 1
+fi
+
+# Assign variables
+
+csv=$1
+outfile=$2
+dirpath=$(dirname $(realpath ${csv} ))
+filename=$(basename ${csv})
+
+echo "dirpath ${dirpath}"
+
+cat <<"EOF" > ${dirpath}/interaction_screen.Rmd
+---
+title: "AlphaFold Interaction Screen Plot"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+params:
+    fname: FALSE
+---
+
+<!--
+# # AlphaFold Interaction Screen Plot
+#
+#
+# This script generates an interactive plot using the AlphaFold Interaction Screen data.
+#
+# # Usage
+
+# 1. Ensure you have R and the required packages installed.
+# 2. Modify the `params$fname` variable to specify the file name of the data you want to plot.
+# 3. Run the script.
+#
+# ## Dependencies
+#
+# The following packages are required:
+#
+# - `readr`: Used for reading the CSV file.
+# - `dplyr`: Used for data manipulation and summarization.
+# - `ggplot2`: Used for creating the plot.
+# - `plotly`: Used for converting the ggplot object to an interactive plot.
+#
+# ## Output
+#
+# The script generates an HTML document containing an interactive plot. The plot displays the relationship between the average PTM value (`avPTM`) and the maximum PTM value (`maxIPTM`) for each `run_folder/protein` in the data. Each point on the plot represents a `run_folder/protein`, and the points are colored based on the maximum IPTM value.
+#
+# ## Additional Notes
+#
+# - The script sets the graphics device to use Cairo for improved rendering of the plot. If Cairo is not available, you may need to adjust this setting.
+# - Missing values in the data are handled by treating "None" and empty strings as NA.
+
+-->
+```{r, echo=FALSE,fig.width=12,fig.height=8,warning=FALSE}
+options(bitmapType='cairo')
+library(magrittr)
+
+p <- readr::read_csv(params$fname,
+                na = c("None", ""),
+                 show_col_types = FALSE) %>%
+       dplyr::group_by(run_folder) %>%
+       dplyr::summarise(maxIPTM = max(iptm, na.rm=TRUE),
+                        avPTM = mean(iptm, na.rm=TRUE)
+                        ) %>%
+       dplyr::mutate(protein = basename(run_folder) ) %>%
+       dplyr::select(protein, maxIPTM, avPTM) %>%
+       ggplot2::ggplot() +
+       ggplot2::aes(avPTM, maxIPTM, label=protein) +
+       ggplot2::geom_point(ggplot2::aes(colour=maxIPTM)) +
+       ggplot2::theme_minimal()
+
+plotly::ggplotly(p)
+
+```
+EOF
+
+
+sbatch --mem=32G --wrap="singularity exec --bind ${dirpath}:/opt rplot.img \
+Rscript -e \"rmarkdown::render('/opt/interaction_screen.Rmd', params=list(fname='/opt/${filename}'))\" &&
+mv ${dirpath}/interaction_screen.html $outfile && 
+rm ${dirpath}/interaction_screen.Rmd"
+                

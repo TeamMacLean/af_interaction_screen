@@ -1,0 +1,53 @@
+BootStrap: yum
+OSVersion: 7
+MirrorURL: http://yum-repos.hpccluster/centos/7/os/$basearch/
+Include: yum
+UpdateURL: http://yum-repos.hpccluster/centos/7/updates/$basearch/
+
+%environment
+ 
+%post
+develInstalls="readline-devel zlib-devel libX11-devel libX11 libXt-devel libXt bzip2-devel xz-devel \
+                pcre2-devel libcurl-devel libxml2-devel mesa-libGL mesa-libGL-devel mesa-libGLU \
+                mesa-libGLU-devel libpng-devel freetype-devel libjpeg-devel nlopt-devel openssl-devel \
+                cairo-devel harfbuzz-devel fribidi-devel libtiff-devel"
+groupInstalls="Development tools"
+yum -y install wget git vi
+yum -y install epel-release
+yum -y install which texlive-xcolor ${develInstalls}
+yum -y groupinstall ${groupInstalls}
+yum -y install pandoc
+
+installDir="/opt"
+
+# Install R
+#rMajorVersion=4
+#rVersion=${rMajorVersion}.3.0
+#rPackage=R-${rVersion}.tar.gz
+#echo "export R_LIBS_USER=\${HOME}/R/${rVersion}/library" >>$SINGULARITY_ENVIRONMENT
+#wget https://cran.r-project.org/src/base/R-${rMajorVersion}/${rPackage}
+#tar xzvf ${rPackage}
+#cd R-${rVersion}
+#./configure
+#make
+#make install
+#cd ..
+
+yum -y install R
+
+
+R --vanilla <<EOF
+setrepo = getOption("repos")
+setrepo["CRAN"] = "http://cran.uk.r-project.org"
+options(repos = setrepo)
+rm(setrepo)
+install.packages(c("tidyverse", "rmarkdown", "plotly"))
+q()
+EOF
+
+
+cleanUpSystem=
+if [ x${cleanUpSystem} = "xyes" ];
+then
+    rm -rf ${buildDir}/${rPackage}
+fi

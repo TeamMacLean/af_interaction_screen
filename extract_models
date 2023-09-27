@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <csv_file_of_af_run_folders> <base_output_folder>"
+  echo "       csv_file_of_af_run_folders: Path to the CSV file containing AF run folders."
+  echo "       base_output_folder: Base folder where the output will be generated."
+  exit 1
+fi
+
+sbatch --mem=32G --wrap "bash model_export ${1} ${2}"

@@ -1,0 +1,70 @@
+#!/bin/bash
+#SBATCH --partition=tsl-short
+#SBATCH --job-name=alphafoldviz
+#SBATCH --mem=0
+#SBATCH --error slurm-%j.err
+#SBATCH --output slurm-%j.out
+
+source package alphafoldviz-0.0.2
+echo `which alphafoldviz.py`
+
+
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <csv_file_of_af_run_folders> <base_output_folder>"
+  echo "       csv_file_of_af_run_folders: Path to the CSV file containing AF run folders."
+  echo "       base_output_folder: Base folder where the output will be generated."
+  exit 1
+fi
+
+csv_file=$1
+basedir=$2 #output base
+
+if [ ! -f "$csv_file" ]; then
+    echo "CSV file '$csv_file' does not exist."
+    exit 1
+fi
+
+last_char=$(tail -c 1 "$csv_file")
+if [ -n "$last_char" ]; then
+    # Append a newline character at the end of the file
+    echo >> "$csv_file"
+fi
+
+declare -a run_folders
+declare -a runs
+
+while IFS=',' read -r -a columns; do
+
+    # Check for header row and skip it
+    if [[ "${columns[0]}" == "run_folder" ]]; then
+        continue
+    fi
+
+    # Perform actions on each line
+    indir=${columns[0]}
+    #echo "$indir"
+
+    if [[ ! " ${run_folders[@]} " =~ " ${indir} " ]]; then
+        run_folders+=("$indir")
+    fi
+    runs+="${columns[*]}"$'\n'
+    #echo "$runs"
+done < "$csv_file"
+
+
+
+for run in "${run_folders[@]}"; do
+    #echo "$run"
+    path=${run%/}
+    if [[ "$path" == */ ]]; then
+        out_dir=$(basename "$(dirname "$path")")
+    else
+        out_dir=$(basename "$path")
+    fi
+    mkdir -p ${basedir}/${out_dir}
+    (IFS=','; echo "${runs[*]}" | grep "$run" | tr ' ' ','  > ${basedir}/${out_dir}/current.runs)
+    python alphafoldviz.py --input-dir ${run} --output-dir ${basedir}/${out_dir} --file-of-models ${basedir}/${out_dir}/current.runs
+    cp -u ${run}/ranked_{0..4}.pdb ${basedir}/${out_dir}/
+    rm ${basedir}/current.runs
+done

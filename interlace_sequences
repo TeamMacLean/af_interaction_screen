@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+"""
+Script: interlace_sequences.py
+Description: Pair sequences from two input files in FASTA format.
+Author: Dan MacLean
+Date: July 10, 2023
+"""
+import sys
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+
+
+def pair_sequences(interactor_file, sequence_file, output_file):
+    """
+    Pair sequences from an interactor file with sequences from a sequence file and write the paired sequences to an output file.
+
+    Args:
+        interactor_file (str): Path to the file containing the interactor sequence in FASTA format.
+        sequence_file (str): Path to the file containing the sequences to pair in FASTA format.
+        output_file (str): Path to the output file to write the paired sequences in FASTA format.
+
+    Raises:
+        SystemExit: If more than one interactor is found in the interactor file.
+
+    Returns:
+        None
+    """
+
+    with open(interactor_file, "r") as handle:
+        interactors_found = [record for record in SeqIO.parse(handle, "fasta")]
+        if len(interactors_found) > 1:
+            sys.exit("More than one interactor found. Need exactly one.")
+        else:
+            interactor = interactors_found[0]
+
+    with open(sequence_file, "r") as inhandle, open(output_file, "w") as outhandle:
+        for record in SeqIO.parse(inhandle, "fasta"):
+            clean_id = record.id.replace("_", "-")
+            id_1 = clean_id + "_1"
+            id_2 = clean_id + "_2"
+            SeqIO.write(SeqRecord(interactor.seq, id=id_1, description=""), outhandle, "fasta")
+            SeqIO.write(SeqRecord(record.seq, id=id_2, description=""), outhandle, "fasta")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        sys.exit("Usage: python interlace_sequences <interactor_file> <sequence_file> <output_file>")
+    else:
+        pair_sequences(sys.argv[1], sys.argv[2], sys.argv[3])

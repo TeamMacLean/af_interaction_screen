@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+import sys
+
+def check_names(interactor_file, sequence_file):
+    """
+    Check FASTA headers for illegal characters.
+
+    This function checks the headers of the FASTA sequences in the interactor and sequence files for illegal characters
+    such as underscore (_) or pipe (|). It ensures that the headers comply with the required format before further processing.
+
+    Args:
+        interactor_file (str): Path to the interactor file in FASTA format.
+        sequence_file (str): Path to the sequence file in FASTA format.
+
+    Returns:
+        None
+
+    Raises:
+        SystemExit: If any illegal characters (underscore or pipe) are found in the FASTA headers.
+
+    Note:
+        If an illegal character is found in any of the FASTA headers, an error message will be printed for the respective
+        record, including the record number and file name. The script will then exit with a non-zero status code.
+    """
+    fails = False
+    for f in [interactor_file, sequence_file]:
+        count = 1
+        with open(f, "r") as inhandle:
+            for record in SeqIO.parse(inhandle, "fasta"):
+                if "_" in record.id or "|" in record.id:
+                    fails = True
+                    print >> sys.stderr, "Found illegal character (_ or |) in FASTA header '{}', record number {}, file '{}'. Please change before proceeding".format(record.id, count, f)
+                count += 1
+    if fails:
+        sys.exit(-1) 
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        sys.exit("Usage: python check_sequence_names.py <interactor_file> <sequence_file>")
+    else:
+        check_names(sys.argv[1], sys.argv[2])

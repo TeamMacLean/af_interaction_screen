@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+
+#Usage:
+#
+#    This script takes two command-line arguments, the path to the AF_RUN_DIR directory and an output csv file name.
+#    it then runs the python script `summarise_screen.py` for extracting the summary information from the screen.
+#
+
+source python-3.8.3
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <AF run output folder> <screen_results.csv>"
+  exit 1
+fi
+
+sbatch --mem=32G --wrap="python summarise_screen.py ${1} > ${2}"

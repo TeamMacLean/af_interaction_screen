@@ -1,0 +1,46 @@
+#!/usr/bin/bash
+
+# AlphaFold Multimer Runner
+#
+# This script prepares a FASTA file for AlphaFold Multimer and submits jobs to AlphaFold for interaction multimer protein structure prediction.
+#
+# Note that the number of multimer predictions is set to 2 (not AF's default 5) for speed reasons.
+
+## Prerequisites
+
+# - Python 3.8.3 or higher
+# - TSL AF Runner 0.1.0 or higher
+
+## Usage
+
+
+# INTERACTOR=<path_to_interactor_file>
+# POI=<path_to_all_other_proteins_file>
+# TEMPDIR=<path_to_AF_temp_directory>
+# OUTDIR=<path_to_final_output_directory>
+
+# submit_screen ${INTERACTOR} ${POI} ${TEMPDIR} ${OUTDIR}
+
+
+if [ $# -lt 4 ]; then
+  echo "Usage: $0 <path_to_interactor_file> <path_to_all_other_proteins_file> <path_to_AF_temp_directory> <path_to_final_output_directory>"
+  echo "       a fasta file of the interactor protein (a file with a single sequence)"
+  echo "       a fasta file with the proteins of interest (a file with multiple sequences)"
+  echo "       the name of a temporary working folder (doesn't have to exist)"  
+  echo "       the name of a final output folder (doesn't have to exist)"  
+  exit 1
+fi
+
+source tsl_af_runner-0.1.0
+
+INTERACTOR=$1
+POI=$2
+TEMPDIR=$3
+OUTDIR=$4
+
+echo "preparing FASTA file for AlphaFold Multimer"
+python check_sequence_names ${INTERACTOR} ${POI} &&
+python interlace_sequences ${INTERACTOR} ${POI} screen_multimer_input.fasta &&
+echo "submitting jobs to AlphaFold" &&
+submit_multimers screen_multimer_input.fasta ${TEMPDIR} ${OUTDIR} --num_multimer_predictions_per_model=2
+

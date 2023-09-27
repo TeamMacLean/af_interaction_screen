@@ -1,0 +1,6 @@
+.DS_Store
+slurm*
+*.html
+*.idea
+*.csv
+*.img
