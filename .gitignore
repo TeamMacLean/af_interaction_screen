@@ -1,6 +1,6 @@
 .DS_Store
 slurm*
 *.html
-*.idea
+*.idea/
 *.csv
 *.img
