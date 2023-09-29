@@ -14,4 +14,4 @@ if [ $# -lt 2 ]; then
   exit 1
 fi
 
-sbatch --mem=32G --wrap="python summarise_screen.py ${1} > ${2}"
+sbatch --mem=32G --wrap="summarise_screen.py ${1} > ${2}"
