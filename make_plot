@@ -25,7 +25,9 @@ outfile=$2
 dirpath=$(dirname $(realpath ${csv} ))
 filename=$(basename ${csv})
 
-echo "dirpath ${dirpath}"
+img_dir=$(dirname $(which make_plot ))
+
+#echo "dirpath ${dirpath}"
 
 cat <<"EOF" > ${dirpath}/interaction_screen.Rmd
 ---
@@ -91,7 +93,7 @@ plotly::ggplotly(p)
 EOF
 
 
-sbatch --mem=32G --wrap="singularity exec --bind ${dirpath}:/opt rplot.img \
+sbatch --mem=32G --wrap="singularity exec --bind ${dirpath}:/opt ${img_dir}/rplot.img \
 Rscript -e \"rmarkdown::render('/opt/interaction_screen.Rmd', params=list(fname='/opt/${filename}'))\" &&
 mv ${dirpath}/interaction_screen.html $outfile && 
 rm ${dirpath}/interaction_screen.Rmd"
